@@ -1,9 +1,30 @@
+from copy import deepcopy
+
+import pytest
 from fastapi.testclient import TestClient
 
-from src.app import app
+from src.app import activities, app
 
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def reset_activities():
+    original_activities = deepcopy(activities)
+    yield
+    activities.clear()
+    activities.update(original_activities)
+
+
+def test_signup_rejects_duplicate_registration():
+    activity_name = "Chess Club"
+    email = "michael@mergington.edu"
+
+    response = client.post(f"/activities/{activity_name}/signup?email={email}")
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Student already signed up for this activity"
 
 
 def test_delete_participant_unregisters_student():
